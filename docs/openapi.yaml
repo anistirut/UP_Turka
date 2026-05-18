@@ -1,0 +1,562 @@
+openapi: 3.0.3
+info:
+  title: Turkish Restaurant API
+  version: 1.0.0
+  description: REST API for auth, users, dishes, orders, courier and admin flows.
+servers:
+  - url: ../api.php?r=
+    description: Query-router entrypoint (no rewrite required)
+tags:
+  - name: Auth
+  - name: Users
+  - name: Dishes
+  - name: Orders
+  - name: Courier
+  - name: Admin
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login by phone/password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, password]
+              properties:
+                phone: { type: string, example: "79222222222" }
+                password: { type: string, example: "secret123" }
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [surname, name, patronomyc, phone, password, confirm_password]
+              properties:
+                surname: { type: string }
+                name: { type: string }
+                patronomyc: { type: string }
+                phone: { type: string }
+                password: { type: string }
+                confirm_password: { type: string }
+      responses:
+        "200":
+          description: Registered and logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: false }
+                  errors:
+                    type: array
+                    items: { type: string }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout current session
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user info
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  user: { $ref: "#/components/schemas/AuthMeUser" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /dishes:
+    get:
+      tags: [Dishes]
+      summary: List dishes
+      responses:
+        "200":
+          description: Dishes list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Dish" }
+    post:
+      tags: [Dishes]
+      summary: Create dish (admin, multipart)
+      security: [ { cookieAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name, compound, price, img]
+              properties:
+                name: { type: string }
+                compound: { type: string }
+                price: { type: number, format: float }
+                img: { type: string, format: binary }
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /dishes/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Dishes]
+      summary: Dish by id
+      responses:
+        "200":
+          description: Dish
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  dish: { $ref: "#/components/schemas/Dish" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Dishes]
+      summary: Update dish (admin, multipart)
+      security: [ { cookieAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                compound: { type: string }
+                price: { type: number, format: float }
+                img: { type: string, format: binary }
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    patch:
+      tags: [Dishes]
+      summary: Update dish (admin, JSON)
+      security: [ { cookieAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                compound: { type: string }
+                price: { type: number, format: float }
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+    delete:
+      tags: [Dishes]
+      summary: Delete dish (admin)
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users (admin)
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/User" }
+    post:
+      tags: [Users]
+      summary: Create user (admin)
+      security: [ { cookieAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [surname, name, patronomyc, phone, password, confirm_password, role]
+              properties:
+                surname: { type: string }
+                name: { type: string }
+                patronomyc: { type: string }
+                phone: { type: string }
+                password: { type: string }
+                confirm_password: { type: string }
+                role: { type: string, enum: [client, courier, admin] }
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+  /users/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Users]
+      summary: User by id (admin or self)
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  user: { $ref: "#/components/schemas/User" }
+    patch:
+      tags: [Users]
+      summary: Update user (admin)
+      security: [ { cookieAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                surname: { type: string }
+                name: { type: string }
+                patronomyc: { type: string }
+                role: { type: string, enum: [client, courier, admin] }
+                password: { type: string, nullable: true }
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+    delete:
+      tags: [Users]
+      summary: Delete user (admin)
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+  /users/me:
+    patch:
+      tags: [Users]
+      summary: Update own profile (client)
+      security: [ { cookieAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                surname: { type: string }
+                patronomyc: { type: string }
+                password: { type: string, nullable: true }
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+  /orders:
+    get:
+      tags: [Orders]
+      summary: Admin orders list
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  items:
+                    type: array
+                    items: { type: object, additionalProperties: true }
+    post:
+      tags: [Orders]
+      summary: Create order by client
+      security: [ { cookieAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [address, dishes]
+              properties:
+                address: { type: string }
+                dishes:
+                  type: object
+                  additionalProperties:
+                    type: integer
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  order_id: { type: integer }
+
+  /orders/admin:
+    post:
+      tags: [Admin]
+      summary: Create order by admin
+      security: [ { cookieAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client_id: { type: integer }
+                courier_id: { type: integer }
+                address: { type: string }
+                status: { type: string, enum: [accepted, progress, ready, delivery, delivered] }
+                dishes:
+                  type: object
+                  additionalProperties:
+                    type: integer
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+  /orders/me:
+    get:
+      tags: [Orders]
+      summary: Client own orders
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  items:
+                    type: array
+                    items: { type: object, additionalProperties: true }
+
+  /orders/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    patch:
+      tags: [Orders]
+      summary: Update order (admin)
+      security: [ { cookieAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address: { type: string }
+                status: { type: string, enum: [accepted, progress, ready, delivery, delivered] }
+                dishes:
+                  type: object
+                  additionalProperties:
+                    type: integer
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+    delete:
+      tags: [Orders]
+      summary: Delete order (admin)
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+  /courier/orders:
+    get:
+      tags: [Courier]
+      summary: Courier orders list
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  items:
+                    type: array
+                    items: { type: object, additionalProperties: true }
+
+  /courier/orders/{id}/status:
+    patch:
+      tags: [Courier]
+      summary: Update order status by courier
+      security: [ { cookieAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [accepted, progress, ready, delivery, delivered]
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+  /admin/order-form-data:
+    get:
+      tags: [Admin]
+      summary: Data for admin order-create form
+      security: [ { cookieAuth: [] } ]
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+  /admin/orders/{id}/form-data:
+    get:
+      tags: [Admin]
+      summary: Data for admin order-edit form
+      security: [ { cookieAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { $ref: "#/components/responses/OkSimple" }
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+  responses:
+    OkSimple:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SuccessSimple"
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    SuccessSimple:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string, example: "Ошибка" }
+    LoginResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        user_id: { type: integer, example: 7 }
+        role: { type: string, example: "client" }
+    AuthMeUser:
+      type: object
+      properties:
+        Id: { type: integer, example: 7 }
+        Role: { type: string, example: "client" }
+        Name: { type: string, example: "Елизавета" }
+        Surname: { type: string, example: "Турицина" }
+    Dish:
+      type: object
+      properties:
+        Id: { type: integer, example: 4 }
+        Name: { type: string, example: "Чорба" }
+        Сompound: { type: string, example: "Чечевица, бульон, морковь..." }
+        Price: { type: string, example: "159.98" }
+        Img: { type: string, example: "dish_6984841fbc41f.jpg" }
+    User:
+      type: object
+      properties:
+        Id: { type: integer, example: 9 }
+        Surname: { type: string, example: "Курьеров" }
+        Name: { type: string, example: "Курьер" }
+        Patronomyc: { type: string, example: "Курьерович" }
+        Phone: { type: string, example: "79222222228" }
+        Role: { type: string, example: "courier" }
+

@@ -1,0 +1,56 @@
+body {
+    min-height: 100vh;
+    background-color: #f7f7f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.login-card {
+    max-width: 380px;
+    width: 100%;
+    border-radius: 16px;
+    border: none;
+}
+.register-card {
+    max-width: 420px;
+    width: 100%;
+    border-radius: 16px;
+    border: none;
+}
+.login-title {
+    font-weight: 600;
+}
+.accent {
+    color: #b02a37;
+}
+.btn-accent {
+    background-color: #b02a37;
+    border: none;
+}
+.btn-accent:hover {
+    background-color: #8f1f2a;
+}
+.form-control {
+    border-radius: 10px;
+}
+.register-link {
+    text-decoration: none;
+    font-weight: 500;
+}
+.register-link:hover {
+    text-decoration: underline;
+}
+.login-link {
+    text-decoration: none;
+    font-weight: 500;
+}
+.login-link:hover {
+    text-decoration: underline;
+}
+.navbar-brand {
+    font-weight: 600;
+    color: #b02a37 !important;
+}
+.card {
+    border-radius: 12px;
+}

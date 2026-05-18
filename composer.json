@@ -1,0 +1,11 @@
+{
+    "require": {
+        "phpoffice/phpspreadsheet": "^5.4"
+    },
+    "autoload": {
+        "classmap": [
+            "app/Models/",
+            "app/Controllers/"
+        ]
+    }
+}
