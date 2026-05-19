@@ -32,6 +32,11 @@ function api_read_json_body(): array
     return is_array($decoded) ? $decoded : [];
 }
 
+function get_ip(): string
+{
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
 function api_current_user_id(): ?int
 {
     if (!isset($_SESSION['user']) || $_SESSION['user'] == -1) {

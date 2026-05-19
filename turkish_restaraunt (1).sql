@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Фев 06 2026 г., 11:46
--- Версия сервера: 5.7.39-log
+-- Время создания: Май 19 2026 г., 08:00
+-- Версия сервера: 8.0.30
 -- Версия PHP: 8.1.9
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- База данных: `turkish_restaurant`
+-- База данных: `turkish_restaraunt`
 --
 
 -- --------------------------------------------------------
@@ -28,12 +28,12 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `Dishes` (
-  `Id` int(11) NOT NULL,
-  `Name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `Сompound` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Id` int NOT NULL,
+  `Name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Сompound` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `Price` decimal(10,2) NOT NULL,
-  `Img` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `Img` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Дамп данных таблицы `Dishes`
@@ -46,24 +46,53 @@ INSERT INTO `Dishes` (`Id`, `Name`, `Сompound`, `Price`, `Img`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Структура таблицы `error_logs`
+--
+
+CREATE TABLE `error_logs` (
+  `id` int NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `ip` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `logs`
+--
+
+CREATE TABLE `logs` (
+  `id` int NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `ip` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Структура таблицы `Orders`
 --
 
 CREATE TABLE `Orders` (
-  `Id` int(11) NOT NULL,
-  `IdClient` int(11) NOT NULL,
-  `IdCourier` int(11) NOT NULL,
+  `Id` int NOT NULL,
+  `IdClient` int NOT NULL,
+  `IdCourier` int NOT NULL,
   `TotalSum` decimal(10,2) NOT NULL,
-  `Address` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `Status` enum('accepted','progress','ready','delivery','delivered') COLLATE utf8mb4_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `Address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Status` enum('accepted','progress','ready','delivery','delivered') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Дамп данных таблицы `Orders`
 --
 
 INSERT INTO `Orders` (`Id`, `IdClient`, `IdCourier`, `TotalSum`, `Address`, `Status`) VALUES
-(33, 7, 9, '159.98', 'Пермь, улица Луначарского, 24с3', 'delivery');
+(33, 7, 9, '159.98', 'Пермь, улица Луначарского, 24с3', 'delivered'),
+(35, 7, 9, '159.98', 'Пермь, Сибирская улица, 55', 'accepted');
 
 -- --------------------------------------------------------
 
@@ -72,18 +101,19 @@ INSERT INTO `Orders` (`Id`, `IdClient`, `IdCourier`, `TotalSum`, `Address`, `Sta
 --
 
 CREATE TABLE `OrdersDishes` (
-  `Id` int(11) NOT NULL,
-  `IdOrder` int(11) NOT NULL,
-  `IdDishes` int(11) NOT NULL,
-  `Quantity` int(11) NOT NULL DEFAULT '1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `Id` int NOT NULL,
+  `IdOrder` int NOT NULL,
+  `IdDishes` int NOT NULL,
+  `Quantity` int NOT NULL DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Дамп данных таблицы `OrdersDishes`
 --
 
 INSERT INTO `OrdersDishes` (`Id`, `IdOrder`, `IdDishes`, `Quantity`) VALUES
-(65, 33, 4, 1);
+(65, 33, 4, 1),
+(68, 35, 4, 1);
 
 -- --------------------------------------------------------
 
@@ -92,14 +122,14 @@ INSERT INTO `OrdersDishes` (`Id`, `IdOrder`, `IdDishes`, `Quantity`) VALUES
 --
 
 CREATE TABLE `Users` (
-  `Id` int(11) NOT NULL,
-  `Surname` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `Name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `Patronomyc` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `Phone` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `Password` varchar(1000) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `Role` enum('client','courier','admin') COLLATE utf8mb4_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `Id` int NOT NULL,
+  `Surname` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Patronomyc` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Phone` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Password` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Role` enum('client','courier','admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Дамп данных таблицы `Users`
@@ -107,9 +137,9 @@ CREATE TABLE `Users` (
 
 INSERT INTO `Users` (`Id`, `Surname`, `Name`, `Patronomyc`, `Phone`, `Password`, `Role`) VALUES
 (4, 'Админов', 'Админ', 'Админович', '79222222225', '$2y$10$0oLQQC6VYG7mJGgJJuR4i.Fk8nu4exX0TAiGX1lmxg2Pgj7/HuPoa', 'admin'),
-(7, 'Турицина', 'Елизавета', 'Сергеевна', '79222222222', '$2y$10$d641SFo827AZ.Yf/dC8tn.PCboJMvYP/D0wu08fafKxOR7xYfLpmq', 'client'),
-(8, 'Иванов', 'Иван', 'Иванович', '79120000000', '$2y$10$QXaU0KSUpxGJjnHk1p.1UerXKtVK6feOxxW2lklqv2ZObhe9//eKC', 'client'),
-(9, 'Курьеров', 'Курьер', 'Курьерович', '79222222228', '$2y$10$8H9nI6x4Pqig6CXRu5XJGub7rlUxFACo7Q.3LFdJpx2KMP3S0t8My', 'courier');
+(7, 'Турицина', 'Елизавета', 'Сергеевна', '79222222222', '$2y$10$8H9nI6x4Pqig6CXRu5XJGub7rlUxFACo7Q.3LFdJpx2KMP3S0t8My', 'client'),
+(8, 'Петров', 'Петр', 'Петрович', '79120000000', '$2y$10$QXaU0KSUpxGJjnHk1p.1UerXKtVK6feOxxW2lklqv2ZObhe9//eKC', 'client'),
+(9, 'Курьерович', 'Курьерша', 'Курьеровна', '79222222228', '$2y$10$8H9nI6x4Pqig6CXRu5XJGub7rlUxFACo7Q.3LFdJpx2KMP3S0t8My', 'courier');
 
 --
 -- Индексы сохранённых таблиц
@@ -120,6 +150,21 @@ INSERT INTO `Users` (`Id`, `Surname`, `Name`, `Patronomyc`, `Phone`, `Password`,
 --
 ALTER TABLE `Dishes`
   ADD PRIMARY KEY (`Id`);
+
+--
+-- Индексы таблицы `error_logs`
+--
+ALTER TABLE `error_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_error_logs_created_at` (`created_at`);
+
+--
+-- Индексы таблицы `logs`
+--
+ALTER TABLE `logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_logs_user_id` (`user_id`),
+  ADD KEY `idx_logs_created_at` (`created_at`);
 
 --
 -- Индексы таблицы `Orders`
@@ -151,25 +196,37 @@ ALTER TABLE `Users`
 -- AUTO_INCREMENT для таблицы `Dishes`
 --
 ALTER TABLE `Dishes`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT для таблицы `error_logs`
+--
+ALTER TABLE `error_logs`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT для таблицы `logs`
+--
+ALTER TABLE `logs`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT для таблицы `Orders`
 --
 ALTER TABLE `Orders`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT для таблицы `OrdersDishes`
 --
 ALTER TABLE `OrdersDishes`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
 
 --
 -- AUTO_INCREMENT для таблицы `Users`
 --
 ALTER TABLE `Users`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `Id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- Ограничения внешнего ключа сохраненных таблиц
