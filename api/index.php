@@ -3,6 +3,7 @@
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/_helpers.php';
 
+require_once __DIR__ . '/../app/Contexts/CacheContext.php';
 require_once __DIR__ . '/../app/Contexts/UserContext.php';
 require_once __DIR__ . '/../app/Contexts/DishContext.php';
 require_once __DIR__ . '/../app/Contexts/OrderContext.php';
@@ -15,11 +16,12 @@ require_once __DIR__ . '/../app/Controllers/UserController.php';
 require_once __DIR__ . '/../app/Controllers/OrderController.php';
 require_once __DIR__ . '/../app/Controllers/ReportController.php';
 
-$userCtx = new UserContext($mysqli);
-$dishCtx = new DishContext($mysqli);
-$orderCtx = new OrderContext($mysqli);
-$reportCtx = new ReportContext($mysqli);
-$logCtx = new LogContext($mysqli);
+$cacheCtx  = new CacheContext();
+$userCtx   = new UserContext($mysqli);
+$dishCtx   = new DishContext($mysqli, $cacheCtx);
+$orderCtx  = new OrderContext($mysqli, $cacheCtx);
+$reportCtx = new ReportContext($mysqli, $cacheCtx);
+$logCtx    = new LogContext($mysqli);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $uri = $_SERVER['REQUEST_URI'] ?? '/';
@@ -88,12 +90,7 @@ try {
     }
 
     if ($method === 'GET' && $path === '/dishes') {
-        $res  = $dishCtx->findAll();
-        $rows = [];
-        while ($row = $res->fetch_assoc()) {
-            $rows[] = $row;
-        }
-        api_ok(['items' => $rows]);
+        api_ok(['items' => $dishCtx->findAll()]);
     }
 
     if ($method === 'GET' && preg_match('#^/dishes/(\d+)$#', $path, $m)) {
@@ -186,7 +183,6 @@ try {
         $res  = $userCtx->findAll();
         $rows = [];
         while ($row = $res->fetch_assoc()) {
-            unset($row['Password']);
             $rows[] = $row;
         }
         api_ok(['items' => $rows]);
@@ -277,6 +273,8 @@ try {
             api_error(400, (string) $res['message']);
         }
         $logCtx->logAction($me['Id'], get_ip(), 'Обновлён профиль');
+        // Сбрасываем кэш: имя/фамилия могли измениться
+        unset($_SESSION['user_data']);
         api_ok();
     }
 
@@ -320,33 +318,31 @@ try {
 
     if ($method === 'GET' && $path === '/orders') {
         api_require_role($userCtx, ['admin']);
-        $res = $orderCtx->findAllForAdmin();
-        $rows = [];
-        while ($row = $res->fetch_assoc()) {
-            $rows[] = $row;
-        }
-        api_ok(['items' => $rows]);
+        api_ok(['items' => $orderCtx->findAllForAdmin()]);
+    }
+
+    if ($method === 'GET' && $path === '/admin/stats') {
+        api_require_role($userCtx, ['admin']);
+        api_ok($reportCtx->fetchStats());
     }
 
     if ($method === 'GET' && $path === '/admin/order-form-data') {
         api_require_role($userCtx, ['admin']);
-        $clientsRes = $userCtx->findClients();
-        $couriersRes = $userCtx->findCouriers();
-        $dishesRes = $dishCtx->findForSelect();
-
-        $clients = [];
-        while ($r = $clientsRes->fetch_assoc()) {
+        $clients  = [];
+        $res      = $userCtx->findClients();
+        while ($r = $res->fetch_assoc()) {
             $clients[] = $r;
         }
         $couriers = [];
-        while ($r = $couriersRes->fetch_assoc()) {
+        $res      = $userCtx->findCouriers();
+        while ($r = $res->fetch_assoc()) {
             $couriers[] = $r;
         }
-        $dishes = [];
-        while ($r = $dishesRes->fetch_assoc()) {
-            $dishes[] = $r;
-        }
-        api_ok(['clients' => $clients, 'couriers' => $couriers, 'dishes' => $dishes]);
+        api_ok([
+            'clients'  => $clients,
+            'couriers' => $couriers,
+            'dishes'   => $dishCtx->findForSelect(),
+        ]);
     }
 
     if ($method === 'GET' && preg_match('#^/admin/orders/(\d+)/form-data$#', $path, $m)) {
@@ -357,12 +353,7 @@ try {
             api_error(404, 'Заказ не найден');
         }
         $selected = $orderCtx->findDishQuantities($orderId);
-        $dishesRes = $dishCtx->findForSelect();
-        $dishes = [];
-        while ($r = $dishesRes->fetch_assoc()) {
-            $dishes[] = $r;
-        }
-        api_ok(['order' => $order, 'selected' => $selected, 'dishes' => $dishes]);
+        api_ok(['order' => $order, 'selected' => $selected, 'dishes' => $dishCtx->findForSelect()]);
     }
 
     if (($method === 'PUT' || $method === 'PATCH') && preg_match('#^/orders/(\d+)$#', $path, $m)) {
@@ -397,12 +388,7 @@ try {
 
     if ($method === 'GET' && $path === '/courier/orders') {
         $me = api_require_role($userCtx, ['courier']);
-        $res = $orderCtx->findAllByCourier($me['Id']);
-        $rows = [];
-        while ($row = $res->fetch_assoc()) {
-            $rows[] = $row;
-        }
-        api_ok(['items' => $rows]);
+        api_ok(['items' => $orderCtx->findAllByCourier($me['Id'])]);
     }
 
     if (($method === 'PUT' || $method === 'PATCH') && preg_match('#^/courier/orders/(\d+)/status$#', $path, $m)) {

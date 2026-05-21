@@ -138,13 +138,46 @@ session_start();
   }
 
   async function init() {
-    const me = await api('/auth/me');
+    const [me, ordersRes] = await Promise.all([
+      api('/auth/me'),
+      api('/orders').catch(() => null),
+    ]);
+
     if (!me.user || me.user.Role !== 'admin') {
       location.href = '../index.php';
       return;
     }
     usernameEl.innerText = `${me.user.Name} ${me.user.Surname}`;
-    await loadOrders();
+
+    const items = ordersRes?.items || [];
+    tbody.innerHTML = '';
+    items.forEach(o => {
+      const id = Number(o.Id);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${id}</td>
+        <td>${escapeHtml((o.ClientName || '') + ' ' + (o.ClientSurname || ''))}</td>
+        <td>${escapeHtml((o.CourierName || '') + ' ' + (o.CourierSurname || ''))}</td>
+        <td>${escapeHtml(o.Dishes || '—')}</td>
+        <td>${escapeHtml(String(o.TotalSum))} ₽</td>
+        <td>${escapeHtml(o.Address || '')}</td>
+        <td>${escapeHtml(o.Status || '')}</td>
+        <td>
+          <a href="edit/editOrder.php?id=${id}" class="btn btn-sm btn-primary">Редактировать</a>
+          <button type="button" class="btn btn-sm btn-danger" data-del="${id}">Удалить</button>
+        </td>
+      `;
+      tr.querySelector(`[data-del="${id}"]`).addEventListener('click', async () => {
+        if (!confirm('Удалить этот заказ?')) return;
+        try {
+          const del = await api('/orders/' + id, { method: 'DELETE' });
+          if (del.success) await loadOrders();
+        } catch (e) {
+          alert(e.message || 'Ошибка');
+        }
+      });
+      tbody.appendChild(tr);
+    });
 
     logoutBtn.addEventListener('click', async () => {
       try { await api('/auth/logout', { method: 'POST' }); }

@@ -27,6 +27,20 @@ session_start();
         .card {
             border-radius: 12px;
         }
+        .stat-card {
+            border-radius: 12px;
+            border: none;
+            color: #fff;
+        }
+        .stat-card .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .stat-card .stat-label {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -52,15 +66,36 @@ session_start();
 </nav>
 
 <div class="container">
-    <div class="card shadow-sm p-4 mb-4">
+    <div id="errors" class="alert alert-danger d-none"></div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm p-4" style="background-color:#b02a37;">
+                <div class="stat-value" id="stat-orders">—</div>
+                <div class="stat-label mt-1">Заказов</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm p-4" style="background-color:#2a7ab0;">
+                <div class="stat-value" id="stat-dishes">—</div>
+                <div class="stat-label mt-1">Блюд в меню</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card shadow-sm p-4" style="background-color:#2ab07a;">
+                <div class="stat-value" id="stat-clients">—</div>
+                <div class="stat-label mt-1">Клиентов</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm p-4">
         <h3 class="mb-3">Добро пожаловать в панель администратора</h3>
         <p>Через меню выше вы можете управлять пользователями, блюдами и заказами.</p>
-        <p>На каждой странице можно добавлять, изменять и удалять записи.</p>
         <a href="../functions/createReport.php" class="btn btn-success">
             Сгенерировать отчёт
         </a>
     </div>
-    <div id="errors" class="alert alert-danger d-none"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -96,7 +131,12 @@ session_start();
 
   async function init() {
     hideError();
-    const me = await api('/auth/me');
+
+    const [me, stats] = await Promise.all([
+      api('/auth/me'),
+      api('/admin/stats').catch(() => null),
+    ]);
+
     if (!me.user || me.user.Role !== 'admin') {
       if (me.user && me.user.Role === 'client') location.href = '../client/client.php';
       else if (me.user && me.user.Role === 'courier') location.href = '../courier/courier.php';
@@ -104,6 +144,12 @@ session_start();
       return;
     }
     usernameEl.innerText = `${me.user.Name} ${me.user.Surname}`;
+
+    if (stats) {
+      document.getElementById('stat-orders').innerText  = stats.orders_count  ?? '—';
+      document.getElementById('stat-dishes').innerText  = stats.dishes_count  ?? '—';
+      document.getElementById('stat-clients').innerText = stats.clients_count ?? '—';
+    }
 
     logoutBtn.addEventListener('click', async () => {
       try { await api('/auth/logout', { method: 'POST' }); }

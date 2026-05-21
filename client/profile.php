@@ -150,6 +150,7 @@ $statusMap = [
 
     async function init() {
         hideError();
+
         const me = await api('/auth/me');
         if (!me.user || me.user.Role !== 'client') {
             location.href = '../index.php';
@@ -157,14 +158,17 @@ $statusMap = [
         }
         usernameEl.innerText = `${me.user.Name} ${me.user.Surname}`;
 
-        const user = await api('/users/' + me.user.Id);
+        const [user, orders] = await Promise.all([
+            api('/users/' + me.user.Id),
+            api('/orders/me'),
+        ]);
+
         const u = user.user;
         form.name.value = u.Name || '';
         form.surname.value = u.Surname || '';
         form.patronomyc.value = u.Patronomyc || '';
         form.phone.value = u.Phone || '';
 
-        const orders = await api('/orders/me');
         renderOrders(orders.items || []);
 
         form.addEventListener('submit', async (e) => {

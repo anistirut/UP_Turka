@@ -11,12 +11,11 @@ class ReportController
         $this->ctx = $ctx;
     }
 
+    /**
+     * Агрегирует аналитику одним запросом через кэшированный метод контекста.
+     */
     public function fetchAnalytics(): array
     {
-        return [
-            'avg_check'    => $this->ctx->fetchAvgCheck(),
-            'popular'      => $this->ctx->fetchPopularDish(),
-            'count_orders' => $this->ctx->fetchOrdersCount(),
-        ];
+        return $this->ctx->fetchAnalyticsCombined();
     }
 }

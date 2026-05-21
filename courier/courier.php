@@ -168,7 +168,12 @@ session_start();
 
     async function init() {
         hideError();
-        const me = await api('/auth/me');
+
+        const [me, ordersRes] = await Promise.all([
+            api('/auth/me'),
+            api('/courier/orders').catch(() => null),
+        ]);
+
         if (!me.user || me.user.Role !== 'courier') {
             if (me.user && me.user.Role === 'admin') location.href = '../admin/admin.php';
             else if (me.user && me.user.Role === 'client') location.href = '../client/client.php';
@@ -177,7 +182,10 @@ session_start();
         }
 
         usernameEl.innerText = `${me.user.Name} ${me.user.Surname}`;
-        await loadOrders();
+
+        const items = ordersRes?.items || [];
+        ordersBody.innerHTML = '';
+        items.forEach(o => ordersBody.appendChild(renderRow(o)));
 
         logoutBtn.addEventListener('click', async () => {
             try { await api('/auth/logout', { method: 'POST' }); }

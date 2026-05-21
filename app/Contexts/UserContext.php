@@ -35,7 +35,7 @@ class UserContext
 
     public function findAll(): mysqli_result
     {
-        return $this->db->query('SELECT * FROM Users ORDER BY Id');
+        return $this->db->query('SELECT Id, Surname, Name, Patronomyc, Phone, Role FROM Users ORDER BY Id');
     }
 
     public function findClients(): mysqli_result

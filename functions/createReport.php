@@ -12,17 +12,19 @@ if (!isset($_SESSION['user']) || $_SESSION['user'] == -1) {
     exit;
 }
 
+require_once __DIR__ . '/../app/Contexts/CacheContext.php';
 require_once __DIR__ . '/../app/Contexts/UserContext.php';
 require_once __DIR__ . '/../app/Contexts/ReportContext.php';
 require_once __DIR__ . '/../app/Controllers/ReportController.php';
 
 $userCtx = new UserContext($mysqli);
-$row = $userCtx->findRoleAndNameById((int) $_SESSION['user']);
+$row     = $userCtx->findRoleAndNameById((int) $_SESSION['user']);
 if (!$row || $row['Role'] !== 'admin') {
     exit('Доступ запрещён');
 }
 
-$reportCtx = new ReportContext($mysqli);
+$cacheCtx         = new CacheContext();
+$reportCtx        = new ReportContext($mysqli, $cacheCtx);
 $reportController = new ReportController($reportCtx);
 
 $spreadsheet = new Spreadsheet();

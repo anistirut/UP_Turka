@@ -52,17 +52,26 @@ function api_require_auth(UserContext $userCtx): array
         api_error(401, 'Не авторизован');
     }
 
+    // Кэш данных пользователя в сессии — исключает лишний SQL-запрос
+    // на каждом защищённом эндпоинте в рамках одной сессии.
+    if (isset($_SESSION['user_data']) && is_array($_SESSION['user_data'])) {
+        return $_SESSION['user_data'];
+    }
+
     $row = $userCtx->findRoleAndNameById($uid);
     if (!$row) {
         api_error(401, 'Не авторизован');
     }
 
-    return [
+    $userData = [
         'Id'      => $uid,
         'Role'    => (string) $row['Role'],
         'Name'    => (string) $row['Name'],
         'Surname' => (string) $row['Surname'],
     ];
+
+    $_SESSION['user_data'] = $userData;
+    return $userData;
 }
 
 function api_require_role(UserContext $userCtx, array $roles): array

@@ -114,7 +114,7 @@ session_start();
 
         col.innerHTML = `
             <div class="card h-100 shadow-sm">
-                <img src="../resources/img/${encodeURIComponent(img)}" class="card-img-top" alt="${escapeHtml(name)}">
+                <img src="../resources/img/${encodeURIComponent(img)}" class="card-img-top" alt="${escapeHtml(name)}" loading="lazy">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">${escapeHtml(name)}</h5>
                     <p class="card-text">${escapeHtml(compound)}</p>
@@ -165,7 +165,11 @@ session_start();
     async function init() {
         hideError();
 
-        const me = await api('/auth/me');
+        const [me, dishes] = await Promise.all([
+            api('/auth/me'),
+            api('/dishes'),
+        ]);
+
         if (!me.user || me.user.Role !== 'client') {
             if (me.user && me.user.Role === 'admin') location.href = '../admin/admin.php';
             else if (me.user && me.user.Role === 'courier') location.href = '../courier/courier.php';
@@ -174,8 +178,6 @@ session_start();
         }
 
         usernameEl.innerText = `${me.user.Name} ${me.user.Surname}`;
-
-        const dishes = await api('/dishes');
         const basket = readBasket();
 
         dishesEl.innerHTML = '';
