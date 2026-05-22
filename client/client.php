@@ -33,8 +33,31 @@ session_start();
         .card-img-top { 
             height: 180px; object-fit: cover; border-top-left-radius:12px; border-top-right-radius:12px; 
         }
-        .quantity-input { 
-            width: 70px; 
+        .card:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,.12) !important;
+        }
+        .btn-accent {
+            background-color: #b02a37;
+            border: none;
+            color: white;
+        }
+        .btn-accent:hover {
+            background-color: #8f1f2a;
+            color: white;
+        }
+        .qty-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .qty-control .qty-val {
+            min-width: 28px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .cart-badge {
+            font-size: .7rem;
+            padding: 2px 6px;
         }
     </style>
 </head>
@@ -43,9 +66,15 @@ session_start();
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Меню ресторана</a>
             <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto gap-2">
                     <li class="nav-item">
                         <a href="profile.php" class="btn btn-outline-primary">Личный кабинет</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="cart.php" class="btn btn-accent position-relative">
+                            Корзина
+                            <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark cart-badge d-none">0</span>
+                        </a>
                     </li>
                 </ul>
                 <span class="navbar-text me-3">Привет, <span id="username">—</span></span>
@@ -57,10 +86,6 @@ session_start();
         <div id="errors" class="alert alert-danger d-none"></div>
 
         <div id="dishes" class="row g-4"></div>
-
-            <div class="mt-4 text-center">
-                <button id="checkout-btn" type="button" class="btn btn-accent btn-lg">Оформить заказ</button>
-            </div>
     </div>
 </body>
 </html>
@@ -69,75 +94,17 @@ session_start();
     const errorsBox = document.getElementById('errors');
     const dishesEl = document.getElementById('dishes');
     const usernameEl = document.getElementById('username');
-    const checkoutBtn = document.getElementById('checkout-btn');
     const logoutBtn = document.getElementById('logout-btn');
+    const cartCount = document.getElementById('cart-count');
 
     function showError(text) {
         errorsBox.classList.remove('d-none');
         errorsBox.innerText = text;
     }
-
     function hideError() {
         errorsBox.classList.add('d-none');
         errorsBox.innerText = '';
     }
-
-    function basketKey() {
-        return 'basket_dishes';
-    }
-
-    function readBasket() {
-        try {
-            const raw = localStorage.getItem(basketKey());
-            const obj = raw ? JSON.parse(raw) : {};
-            return (obj && typeof obj === 'object') ? obj : {};
-        } catch (e) {
-            return {};
-        }
-    }
-
-    function writeBasket(basket) {
-        localStorage.setItem(basketKey(), JSON.stringify(basket));
-    }
-
-    function renderDishCard(dish, basket) {
-        const id = Number(dish.Id);
-        const img = dish.Img || '';
-        const name = dish.Name || '';
-        const compound = dish['Сompound'] || '';
-        const price = dish.Price || '';
-
-        const qty = Number(basket[id] || 0);
-
-        const col = document.createElement('div');
-        col.className = 'col-md-4';
-
-        col.innerHTML = `
-            <div class="card h-100 shadow-sm">
-                <img src="../resources/img/${encodeURIComponent(img)}" class="card-img-top" alt="${escapeHtml(name)}" loading="lazy">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">${escapeHtml(name)}</h5>
-                    <p class="card-text">${escapeHtml(compound)}</p>
-                    <p class="card-text fw-bold">${escapeHtml(String(price))} ₽</p>
-                    <div class="mt-auto d-flex gap-2 align-items-center">
-                        <input type="number" min="0" value="${qty}" class="form-control form-control-sm quantity-input" data-id="${id}">
-                    </div>
-                </div>
-            </div>
-        `;
-
-        const input = col.querySelector('input.quantity-input');
-        input.addEventListener('input', () => {
-            const v = Math.max(0, parseInt(input.value || '0', 10));
-            input.value = String(v);
-            if (v > 0) basket[id] = v;
-            else delete basket[id];
-            writeBasket(basket);
-        });
-
-        return col;
-    }
-
     function escapeHtml(str) {
         return String(str)
             .replaceAll('&', '&amp;')
@@ -147,23 +114,116 @@ session_start();
             .replaceAll("'", '&#039;');
     }
 
-    const API_URL = '../api.php';
+    const MAX_QTY = 99;
+
+    function readBasket() {
+        try {
+            const obj = JSON.parse(localStorage.getItem('basket_dishes') || '{}');
+            return (obj && typeof obj === 'object') ? obj : {};
+        } catch { return {}; }
+    }
+    function writeBasket(basket) {
+        localStorage.setItem('basket_dishes', JSON.stringify(basket));
+        updateCartBadge();
+    }
+    function getTotalQty(basket) {
+        return Object.values(basket).reduce((s, v) => s + Number(v), 0);
+    }
+    function updateCartBadge() {
+        const total = getTotalQty(readBasket());
+        if (total > 0) {
+            cartCount.innerText = total;
+            cartCount.classList.remove('d-none');
+        } else {
+            cartCount.classList.add('d-none');
+        }
+    }
+
+    function renderDishCard(dish) {
+        const id       = Number(dish.Id);
+        const img      = dish.Img || '';
+        const name     = dish.Name || '';
+        const compound = dish['Сompound'] || '';
+        const price    = dish.Price || '';
+
+        const col = document.createElement('div');
+        col.className = 'col-md-4';
+        col.innerHTML = `
+            <div class="card h-100 shadow-sm">
+                <img src="../resources/img/${encodeURIComponent(img)}" class="card-img-top" alt="${escapeHtml(name)}" loading="lazy">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">${escapeHtml(name)}</h5>
+                    <p class="card-text text-muted">${escapeHtml(compound)}</p>
+                    <p class="card-text fw-bold fs-5">${escapeHtml(String(price))} ₽</p>
+                    <div class="mt-auto" id="ctrl-${id}"></div>
+                </div>
+            </div>
+        `;
+
+        renderCardControl(col, id);
+        return col;
+    }
+
+    function renderCardControl(col, id) {
+        const ctrl = col.querySelector(`#ctrl-${id}`);
+        const basket = readBasket();
+        const qty = Number(basket[id] || 0);
+
+        if (qty === 0) {
+            ctrl.innerHTML = `<button class="btn btn-accent w-100">В корзину</button>`;
+            ctrl.querySelector('button').addEventListener('click', () => {
+                const b = readBasket();
+                if (getTotalQty(b) >= MAX_QTY) {
+                    showError('Куда так много? Мы не успеем столько приготовить, закажи менее 99 блюд');
+                    return;
+                }
+                b[id] = 1;
+                writeBasket(b);
+                hideError();
+                renderCardControl(col, id);
+            });
+        } else {
+            ctrl.innerHTML = `
+                <div class="qty-control">
+                    <button class="btn btn-outline-secondary btn-sm px-3" data-action="minus">−</button>
+                    <span class="qty-val">${qty}</span>
+                    <button class="btn btn-outline-secondary btn-sm px-3" data-action="plus">+</button>
+                </div>`;
+            ctrl.querySelector('[data-action="minus"]').addEventListener('click', () => {
+                const b = readBasket();
+                if ((b[id] || 0) > 1) b[id] = Number(b[id]) - 1;
+                else delete b[id];
+                writeBasket(b);
+                hideError();
+                renderCardControl(col, id);
+            });
+            ctrl.querySelector('[data-action="plus"]').addEventListener('click', () => {
+                const b = readBasket();
+                if (getTotalQty(b) >= MAX_QTY) {
+                    showError('Куда так много? Мы не успеем столько приготовить, закажи менее 99 блюд');
+                    return;
+                }
+                b[id] = (Number(b[id]) || 0) + 1;
+                writeBasket(b);
+                hideError();
+                renderCardControl(col, id);
+            });
+        }
+    }
 
     async function api(path, options = {}) {
-        const resp = await fetch(API_URL + '?r=' + encodeURIComponent(path), {
+        const resp = await fetch('../api.php?r=' + encodeURIComponent(path), {
             credentials: 'include',
             ...options,
         });
         const data = await resp.json().catch(() => null);
-        if (!resp.ok || !data) {
-            const msg = (data && data.message) || 'Ошибка запроса';
-            throw new Error(msg);
-        }
+        if (!resp.ok || !data) throw new Error((data && data.message) || 'Ошибка запроса');
         return data;
     }
 
     async function init() {
         hideError();
+        updateCartBadge();
 
         const [me, dishes] = await Promise.all([
             api('/auth/me'),
@@ -178,28 +238,13 @@ session_start();
         }
 
         usernameEl.innerText = `${me.user.Name} ${me.user.Surname}`;
-        const basket = readBasket();
 
         dishesEl.innerHTML = '';
-        (dishes.items || []).forEach(d => {
-            dishesEl.appendChild(renderDishCard(d, basket));
-        });
-
-        checkoutBtn.addEventListener('click', () => {
-            const b = readBasket();
-            if (!b || Object.keys(b).length === 0) {
-                showError('Выберите хотя бы одно блюдо.');
-                return;
-            }
-            location.href = 'checkout.php';
-        });
+        (dishes.items || []).forEach(d => dishesEl.appendChild(renderDishCard(d)));
 
         logoutBtn.addEventListener('click', async () => {
-            try {
-                await api('/auth/logout', { method: 'POST' });
-            } finally {
-                location.href = '../index.php';
-            }
+            try { await api('/auth/logout', { method: 'POST' }); }
+            finally { location.href = '../index.php'; }
         });
     }
 

@@ -7,10 +7,27 @@ session_start();
     <meta charset="UTF-8">
     <title>Оформление заказа</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=96123de1-75f1-4536-b4f0-c9e2efc923ba&lang=ru_RU"></script>
-
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=96123de1-75f1-4536-b4f0-c9e2efc923ba&lang=ru_RU" defer></script>
+    <style>
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+        }
+    </style>
 </head>
 <body class="bg-light">
+
+<div class="toast-container">
+    <div id="success-toast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" data-bs-autohide="false">
+        <div class="d-flex">
+            <div class="toast-body fs-6">
+                Заказ успешно оформлен! Ожидайте доставку.
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="container mt-4">
     <h3 class="mb-3">Ваш заказ</h3>
@@ -32,6 +49,8 @@ session_start();
 
         <button id="confirm-btn" class="btn btn-danger btn-lg w-100" type="button">Подтвердить заказ</button>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 const errorsBox = document.getElementById('errors');
@@ -154,7 +173,10 @@ async function initCheckout() {
         });
         if (resp.success) {
             clearBasket();
-            location.href = 'client.php';
+            const toastEl = document.getElementById('success-toast');
+            const toast = new bootstrap.Toast(toastEl, { delay: 2500 });
+            toast.show();
+            setTimeout(() => { location.href = 'client.php'; }, 2800);
         }
     });
 }

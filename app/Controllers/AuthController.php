@@ -72,8 +72,8 @@ class AuthController
         if ($surname === '' || $name === '' || $patronomyc === '') {
             $errors[] = 'Пожалуйста, заполните все поля ФИО.';
         }
-        if (strlen($phone) < 10) {
-            $errors[] = 'Введите корректный номер телефона.';
+        if (strlen($phone) !== 11) {
+            $errors[] = 'Введите корректный номер телефона (11 цифр).';
         }
         if (strlen((string) $password) < 6) {
             $errors[] = 'Пароль должен быть не менее 6 символов.';

@@ -62,7 +62,7 @@ session_start();
         </form>
 
         <div class="text-center">
-            <a href="index.php" class="login-link">Уже зарегистрированы?</a>
+            <a href="login.php" class="login-link">Уже зарегистрированы?</a>
         </div>
     </div>
 </div>
@@ -71,9 +71,31 @@ session_start();
 </body>
 </html>
 <script>
-    document.getElementById('phone').addEventListener('input', function () {
-        this.value = this.value.replace(/[^0-9+\-\(\)\s]/g, '');
-    });
+    function applyPhoneMask(el) {
+        function format(raw) {
+            let d = raw.replace(/\D/g, '');
+            if (d.startsWith('8')) d = '7' + d.slice(1);
+            else if (d.length && !d.startsWith('7')) d = '7' + d;
+            d = d.slice(0, 11);
+            if (!d) return '';
+            let res = '+7';
+            if (d.length > 1)  res += ' (' + d.slice(1, 4);
+            if (d.length >= 4) res += ') ' + d.slice(4, 7);
+            if (d.length >= 7) res += '-' + d.slice(7, 9);
+            if (d.length >= 9) res += '-' + d.slice(9, 11);
+            return res;
+        }
+        el.addEventListener('input', () => { el.value = format(el.value); });
+        el.addEventListener('paste', e => {
+            e.preventDefault();
+            el.value = (e.clipboardData || window.clipboardData).getData('text');
+            el.dispatchEvent(new Event('input'));
+        });
+        el.addEventListener('focus', () => { if (!el.value) el.value = '+7 '; });
+        el.addEventListener('blur',  () => { if (el.value === '+7 ' || el.value === '+7') el.value = ''; });
+    }
+
+    applyPhoneMask(document.getElementById('phone'));
 
     const form = document.getElementById('register-form');
     const errorsBox = document.getElementById('errors');
